@@ -102,3 +102,9 @@ dist
 
 # TernJS port file
 .tern-port
+.idea/modules.xml
+.idea/php.xml
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/AudioSlicerAI.iml
+package-lock.json
