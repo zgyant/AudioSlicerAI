@@ -112,3 +112,9 @@ build/bundle.js
 package-lock.json
 build/bundle.js
 build/bundle.js
+.idea/modules.xml
+.idea/php.xml
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+.idea/AudioSlicerAI.iml
+package-lock.json
