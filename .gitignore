@@ -110,3 +110,5 @@ dist
 .idea/workspace.xml
 build/bundle.js
 package-lock.json
+build/bundle.js
+build/bundle.js
