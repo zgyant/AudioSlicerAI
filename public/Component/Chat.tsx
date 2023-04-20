@@ -1,9 +1,10 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 
 interface Message {
     message: string;
     from: 'user' | 'server';
     url: string | null;
+    type: string | null;
 }
 
 interface Error {
@@ -18,8 +19,8 @@ const ChatBox: React.FC = () => {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         const message = event.currentTarget.message.value;
-        setMessages([...messages, {message, from: 'user', url: '#'}]);
-        setMessages([...messages, {message: 'Searching.....', from: 'server', url: '#'}]);
+        setMessages([...messages, {message, from: 'user', url: '#', type: 'search'}]);
+        setMessages([...messages, {message: 'Searching.....', from: 'server', url: '#', type: 'search'}]);
         event.currentTarget.reset();
         //Call API endpoint /chat
         fetch('/chat', {
@@ -36,7 +37,8 @@ const ChatBox: React.FC = () => {
                     serverResponses.push({
                         message: `${item.title} can be found on ${item.url}`,
                         from: 'server',
-                        url: item.url
+                        url: item.url,
+                        type: 'result'
                     })
                 });
                 setMessages(serverResponses);
@@ -52,22 +54,48 @@ const ChatBox: React.FC = () => {
         });
     };
 
-    function runSeparator(response: Message) {
+    async function runSeparator(response: Message) {
         if (response.url === '#' || response.from === 'user') return;
-        fetch('/extract', {
+
+        if (response.type === 'download' && response.url) {
+            window.open(response.url);
+            // Delete file after 5seconds
+            setTimeout(() => {
+                fetch('/delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({file: response.url}),
+                });
+            }, 5000);
+            return;
+        }
+
+        setMessages([{message: 'Fetching audio.....', from: 'server', url: '#', type: 'extract'}])
+        const result = await fetch('/extract', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({url: response.url}),
         });
-        console.log(response);
+        if (result.ok) {
+            const res: any = await result.json();
+            setMessages([res])
+        } else {
+            const message = result.statusText;
+            setError([{
+                message,
+                from: 'server'
+            }]);
+        }
     }
 
     return (
         <>
             <div className="header">
-                <div className="header-title">Audio Slicer</div>
+                <div className="header-title">Spleetor Youtube</div>
             </div>
             <div className="chat-box">
                 <div className="messages-container">
@@ -85,7 +113,7 @@ const ChatBox: React.FC = () => {
                     ))}
                 </div>
                 <form onSubmit={handleSubmit}>
-                    <input type="text" name="message" placeholder="Type your message here"/>
+                    <input type="text" name="message" placeholder="Search on YouTube"/>
                     <button type="submit">Send</button>
                 </form>
             </div>

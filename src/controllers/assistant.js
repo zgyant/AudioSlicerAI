@@ -1,8 +1,10 @@
 const ytdl = require('ytdl-core');
 const puppeteer = require('puppeteer');
-const fs = require("fs");
 const separateAudio = require("./audioSplitter");
 const cheerio = require('cheerio');
+const pcmConvert = require('pcm-convert');
+const fs = require("fs");
+
 /**
  * function that runs puppeteer and cheerio to return the link
  * @param req
@@ -43,18 +45,32 @@ const Chat = async (req, res) => {
     return res.send({data: links});
 }
 
+/**
+ * function to download the audio from the youtube link and send it to terraform to separate the vocals
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
 const videoDownloader = async (req, res) => {
     try {
         let url = req?.body?.url;
 
         if (!url) return;
         const audioStream = ytdl(url, {filter: 'audioonly'});
-        //current date
         const date = new Date();
-        const fileName = `${date.getTime()}_audio.mp4`;
-        audioStream.pipe(fs.createWriteStream(`./${fileName}_audio.mp4`)).on('finish', () => {
-            console.log('Audio Downloaded');
-            return separateAudio(`./${fileName}_audio.mp4`);
+        const fileName = `${date.getTime()}`;
+
+        if (!fs.existsSync(`./output/${fileName}`)) {
+            fs.mkdirSync(`./output/${fileName}`);
+        }
+
+        audioStream.pipe(fs.createWriteStream(`./output/${fileName}/full.mp3`));
+        audioStream.on('end', async () => {
+            await separateAudio(`./output/${fileName}`);
+            return res.send({message: 'Download....', url: `#`, from: 'server', type: 'convert'});
+            if (!status) return res.send({title: 'Error!', url: '#', from: 'server'});
+
+            return res.send({message: 'Download....', url: `./output/${separatedFileName}`, from: 'server', type: 'download'});
         });
     } catch (e) {
         console.log(e);
@@ -62,4 +78,21 @@ const videoDownloader = async (req, res) => {
 
 }
 
-module.exports = {Chat, videoDownloader}
+/**
+ * function to delete the file from the server
+ * @param req
+ * @param res
+ * @returns {Promise<void>}
+ */
+const deleteOldFile = async (req, res) => {
+    try {
+        let file = req?.body?.file;
+        if (!file) return;
+        fs.unlinkSync(file);
+        res.send({message: 'File Deleted', from: 'server'});
+    } catch (e) {
+        console.log(e);
+    }
+}
+
+module.exports = {Chat, videoDownloader, deleteOldFile}

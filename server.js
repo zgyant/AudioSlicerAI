@@ -4,7 +4,7 @@ const bodyParser = require('body-parser')
 const dotenv = require('dotenv');
 dotenv.config({path: './.env'});
 const cors = require("cors");
-const {Chat, videoDownloader} = require('./src/controllers/assistant');
+const {Chat, videoDownloader, deleteOldFile} = require('./src/controllers/assistant');
 
 const app = express();
 
@@ -24,5 +24,10 @@ app.get('/', function (req, res) {
 
 app.post('/chat', Chat);
 app.post('/extract', videoDownloader);
+app.post('/delete', deleteOldFile);
+app.get('/output/:file', (req, res) => {
+    const file = req.params.file;
+    res.download(`./output/${file}`);
+});
 
 app.listen(process.env.PORT || 8000);
